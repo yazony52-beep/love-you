@@ -22,7 +22,7 @@ function measureTextWidth(text, fontSize) {
 }
 
 function checkCollision(box) {
-    const padding = 2; // Keep at least 2px space between words
+    const padding = window.innerWidth < 600 ? 1 : 2; // Less padding on mobile
     for (let b of placedBoxes) {
         if (box.right + padding > b.left - padding && 
             box.left - padding < b.right + padding &&
@@ -56,21 +56,24 @@ function createHeart() {
     placedBoxes = []; // Reset on each creation
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
-    const scale = Math.min(window.innerWidth, window.innerHeight) / 45; 
+    
+    // Detect mobile screens to scale font size down appropriately
+    const isMobile = window.innerWidth < 600;
+    const scale = Math.min(window.innerWidth, window.innerHeight) / (isMobile ? 38 : 45); 
+    const outlineFontSize = isMobile ? 9 : 15;
 
     let globalDelay = 0;
 
     // 1. Draw Outline with collision detection
-    const outlineSteps = 250; // finely sample points
+    const outlineSteps = 300; // finely sample points
     for (let i = 0; i < outlineSteps; i++) {
         const t = (i / outlineSteps) * Math.PI * 2;
         const pos = getHeartPosition(t, scale);
         
         const phrase = phrases[i % phrases.length];
-        const fontSize = 15;
         
-        const width = measureTextWidth(phrase, fontSize);
-        const height = fontSize * 1.2; // Approximate height
+        const width = measureTextWidth(phrase, outlineFontSize);
+        const height = outlineFontSize * 1.2; // Approximate height
         
         const box = {
             left: centerX + pos.x - width / 2,
@@ -81,20 +84,24 @@ function createHeart() {
         
         if (!checkCollision(box)) {
             placedBoxes.push(box);
-            createWord(pos.x, pos.y, centerX, centerY, phrase, globalDelay, fontSize);
+            createWord(pos.x, pos.y, centerX, centerY, phrase, globalDelay, outlineFontSize);
             globalDelay += 0.15; // Slowed down speed of outline drawing
         }
     }
 
     // 2. Fill the interior randomly without overlaps
-    const fillAttempts = 3000; // Try placing a lot of points, keep those that fit
+    const fillAttempts = isMobile ? 1500 : 3000; 
     for (let i = 0; i < fillAttempts; i++) {
         const t = Math.random() * Math.PI * 2;
         const r = Math.sqrt(Math.random()) * 0.85; // Stay mostly inside
         const pos = getHeartPosition(t, scale * r);
         
         const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-        const fontSize = Math.floor(Math.random() * 5 + 11); // 11px to 15px
+        
+        // Smaller fill fonts for mobile
+        const fontSize = isMobile 
+            ? Math.floor(Math.random() * 4 + 7)  // 7px to 10px on mobile
+            : Math.floor(Math.random() * 5 + 11); // 11px to 15px on desktop
         
         const width = measureTextWidth(phrase, fontSize);
         const height = fontSize * 1.2;
